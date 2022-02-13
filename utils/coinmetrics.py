@@ -82,7 +82,7 @@ class CoinMetrics():
 
     def catalog_assets(self, assets: Sequence[str] = None):
         out = self.api_call(end_point="/catalog-all/assets", assets=assets)
-        return {asset["asset"].upper(): asset for asset in out}
+        return {asset["asset"]: asset for asset in out}
 
     def api_call(self, end_point, **argd) -> Sequence[Mapping]:
         data = []
