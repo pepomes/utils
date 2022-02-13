@@ -23,12 +23,13 @@ class CoinMetrics():
     #https://docs.coinmetrics.io/api/v4
     class Decorators():
         @classmethod
-        def to_frame(cls, decorated):
+        def to_frame(cls, decorated, transpose=False):
             type_map = {'decimal': float, 'bigint': int}
 
             def wrapper(*arg_list, **arg_dict):
                 metrics = arg_list[0].metrics
                 df = pd.DataFrame(decorated(*arg_list, **arg_dict)).fillna(0)
+                if transpose: df = df.transpose()
                 df.columns = [camel_to_snake(col) for col in df.columns]
                 if "time" in df.columns:
                     df.time = df.time.apply(isoparse)
@@ -41,6 +42,7 @@ class CoinMetrics():
                 return df
 
             return wrapper
+
 
     class MarketType(Enum):
         spot = auto()
@@ -69,10 +71,12 @@ class CoinMetrics():
         return self.api_call(end_point="/timeseries/market-funding-rates", markets=markets, start_time=start_time,
                              end_time=end_time)
 
+    @Decorators.to_frame(True)
     def catalog_metrics(self, metrics: Sequence[str] = []):
         out = self.api_call(end_point="/catalog/metrics", metrics=metrics)
         return {camel_to_snake(metric["metric"]): metric for metric in out}
 
+    @Decorators.to_frame(True)
     def catalog_markets(self, markets: Sequence[str] = None, exchange: Sequence[str] = None,
                         type: MarketType = None, base: str = None, quote: str = None, asset: str = None,
                         symbol: str = None):
@@ -80,6 +84,7 @@ class CoinMetrics():
                             base=base, quote=quote, asset=asset, symbol=symbol)
         return {market["market"]: market for market in out}
 
+    @Decorators.to_frame(True)
     def catalog_assets(self, assets: Sequence[str] = None):
         out = self.api_call(end_point="/catalog-all/assets", assets=assets)
         return {asset["asset"]: asset for asset in out}
