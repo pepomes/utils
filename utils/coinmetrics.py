@@ -61,19 +61,19 @@ class CoinMetrics():
         out = self.api_call(end_point="/catalog/metrics", metrics=metrics)
         return {camel_to_snake(metric["metric"]): metric for metric in out}
 
-    @Decorators.to_frame
+    @Decorators.to_frame()
     def market_candles(self, markets: Sequence[str], frequency: str = '1d',
                        start_time: str = None, end_time: str = None) -> Sequence[Mapping]:
         return self.api_call(end_point="/timeseries/market-candles", markets=markets, frequency=frequency,
                              start_time=start_time, end_time=end_time, paging_from="start", page_size=10000)
 
-    @Decorators.to_frame
+    @Decorators.to_frame()
     def asset_metrics(self, assets: Sequence[str], metrics: Sequence[str], frequency: str = '1d',
                       start_time: str = None, end_time: str = None) -> Sequence[Mapping]:
         return self.api_call(end_point="/timeseries/asset-metrics", assets=assets, metrics=metrics, frequency=frequency,
                              start_time=start_time, end_time=end_time, paging_from="start", page_size=10000)
 
-    @Decorators.to_frame
+    @Decorators.to_frame()
     def market_funding_rates(self, markets: Sequence[str], start_time: str = None, end_time: str = None):
         return self.api_call(end_point="/timeseries/market-funding-rates", markets=markets, start_time=start_time,
                              end_time=end_time)
