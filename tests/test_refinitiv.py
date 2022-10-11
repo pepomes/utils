@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 import argparse
-
+import os
 from utils.refinitiv.datascope import (
     QuotaContext,
     CredentialedHTTP,
@@ -28,7 +28,9 @@ def dump_quota_info(http: HTTP):
 
 def main(destination_uri, rics, first_date, last_date):
 
-    http = CredentialedHTTP(RefinitivCredentialsProvider("9023248", "uKyJMzyMj@6RrVGarktT", HTTP()))
+    dss_pass = os.getenv("DSS_PASS")
+    dss_login = os.getenv("DSS_LOGIN")
+    http = CredentialedHTTP(RefinitivCredentialsProvider(dss_login, dss_pass, HTTP()))
 
     fields = [
         EndOfDayField.AssetTypeDescription,
