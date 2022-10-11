@@ -13,7 +13,7 @@ from utils.refinitiv.datascope import (
     SearchRequest,
     CsvWriter
 )
-from utils.refinitiv.enums import EndOfDayField, QuotaCategoryCode, InstrumentTypeGroup
+from utils.refinitiv.enums import EndOfDayField, QuotaCategoryCode, InstrumentTypeGroup, IdentifierType
 from utils.refinitiv.rics import HRP_UNIVERSE
 
 
@@ -43,7 +43,7 @@ def main(destination_uri, rics, first_date, last_date):
         EndOfDayField.Volume,
     ]
 
-    #request = eod_request(rics, fields, DateRange(first_date, last_date))
+    request = eod_request(rics, fields, DateRange(first_date, last_date), IdentifierType.ChainRic)
     instr_type_groups = \
         [
             InstrumentTypeGroup.Money,
@@ -51,9 +51,9 @@ def main(destination_uri, rics, first_date, last_date):
             InstrumentTypeGroup.Equities,
             InstrumentTypeGroup.FuturesAndOptions
         ]
-    request = SearchRequest(instr_type_groups)
+    #request = SearchRequest(instr_type_groups)
     writer = CsvWriter(destination_uri)
-    ExtractionsContext(http).search(request, "/Users/pepomes/Downloads/money_ric.csv")
+    ExtractionsContext(http).extract_raw(request, writer)
 
 
 if __name__ == "__main__":
@@ -62,10 +62,10 @@ if __name__ == "__main__":
     # parser.add_argument("first-date", dest="first_date", type=str, help="The first date to fetch (default: today - 1d - 30y)", required=False)
     # parser.add_argument("last-date", dest="last_date", type=str, help="The last date to fetch (default: today - 1d)", required=False)
     today_str = date.today().strftime("%Y-%m-%d")
-    args = parser.parse_args([f"/Users/pepomes/Downloads/refinitiv_{today_str}.csv"])
+    args = parser.parse_args([f"/Users/pepomes/Downloads/refinitiv_test_{today_str}.csv"])
 
     today = date.today()
     last_date = today - timedelta(days=1)
     first_date = last_date.replace(year=today.year - 1)
 
-    main(args.output, ["EUR="], first_date, last_date)
+    main(args.output, ["0#AD:"], first_date, last_date)

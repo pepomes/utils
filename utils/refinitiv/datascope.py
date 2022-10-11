@@ -20,7 +20,8 @@ from utils.refinitiv.enums import (
     SearchType,
     QuotaCategoryCode,
     AssetClass,
-    InstrumentTypeGroup
+    InstrumentTypeGroup,
+    IdentifierType
 )
 
 
@@ -130,6 +131,7 @@ class ExtractionRequest:
     rics: Iterable[str]
     fields: Iterable[RefinitivField]
     condition: Dict
+    identifier_type: IdentifierType
 
     def to_dict(self):
         return {
@@ -138,7 +140,7 @@ class ExtractionRequest:
                 "ContentFieldNames": [f.value for f in self.fields],
                 "IdentifierList": {
                     "@odata.type": "#DataScope.Select.Api.Extractions.ExtractionRequests.InstrumentIdentifierList",
-                    "InstrumentIdentifiers": [{"Identifier": ric, "IdentifierType": "Ric"} for ric in self.rics],
+                    "InstrumentIdentifiers": [{"Identifier": ric, "IdentifierType": self.identifier_type.value} for ric in self.rics],
                     "UseUserPreferencesForValidationOptions": "false",
                 },
                 "Condition": self.condition,
@@ -177,7 +179,7 @@ class CsvWriter(Writer):
 
 
 def intraday_bars_request(rics: Iterable[str], fields: Iterable[IntradayField], date_range: DateRange,
-                          interval: SummaryInterval) -> ExtractionRequest:
+                          interval: SummaryInterval, identifier_type: IdentifierType) -> ExtractionRequest:
     condition = {
         "MessageTimeStampIn": "GmtUtc",
         "ReportDateRangeType": "Range",
@@ -187,25 +189,25 @@ def intraday_bars_request(rics: Iterable[str], fields: Iterable[IntradayField], 
         "TimebarPersistence": "true",
         "DisplaySourceRIC": "true",
     }
-    return ExtractionRequest(RequestType.INTRADAY_BARS, rics, fields, condition)
+    return ExtractionRequest(RequestType.INTRADAY_BARS, rics, fields, condition=condition, identifier_type=identifier_type)
 
 
-def eod_request(rics: Iterable[str], fields: Iterable[EndOfDayField], date_range: DateRange) -> ExtractionRequest:
+def eod_request(rics: Iterable[str], fields: Iterable[EndOfDayField], date_range: DateRange, identifier_type: IdentifierType) -> ExtractionRequest:
     condition = {
         "ReportDateRangeType": "Range",
         "QueryStartDate": date_range.first.strftime("%Y-%m-%d"),
         "QueryEndDate": date_range.last.strftime("%Y-%m-%d"),
     }
-    return ExtractionRequest(RequestType.END_OF_DAY, rics, fields, condition)
+    return ExtractionRequest(RequestType.END_OF_DAY, rics, fields, condition, identifier_type=identifier_type)
 
 
-def time_and_sales_request(rics: Iterable[str], fields: Iterable[TimeAndSalesField], date_range: DateRange) -> ExtractionRequest:
+def time_and_sales_request(rics: Iterable[str], fields: Iterable[TimeAndSalesField], date_range: DateRange, identifier_typeIdentifierType) -> ExtractionRequest:
     condition = {
         "ReportDateRangeType": "Range",
         "QueryStartDate": date_range.first.strftime("%Y-%m-%d"),
         "QueryEndDate": date_range.last.strftime("%Y-%m-%d"),
     }
-    return ExtractionRequest(RequestType.TIME_AND_SALES, rics, fields, condition)
+    return ExtractionRequest(RequestType.TIME_AND_SALES, rics, fields, condition, identifier_type=identifier_type)
 
 
 class ExtractionsContext:

@@ -637,3 +637,7 @@ class InstrumentTypeGroup(Enum):
     Money = "Money"  # Money
     MortgageBackedSecurities = "MortgageBackedSecurities"  # Mortgage Backed Securities (MBS)
     Municipals = "Municipals"  # US Municipals
+
+class IdentifierType(Enum):
+    Ric = "Ric"
+    ChainRic = "ChainRIC"
