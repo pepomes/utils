@@ -598,7 +598,13 @@ class TimeAndSalesField(RefinitivField):
 
 
 class SummaryInterval(Enum):
-    ONE_HOUR = "OneHour"
+    FIFTEEN_MINUTES = "FifteenMinutes"  # Fifteen minute interval for summaries.
+    FIVE_MINUTES = "FiveMinutes"  # Five minute interval for summaries.
+    FIVE_SECONDS = "FiveSeconds"  # Five second interval for summaries.
+    ONE_HOUR = "OneHour"  # One hour interval for summaries.
+    ONE_MINUTE = "OneMinute"  # One minute interval for summaries.
+    ONE_SECOND = "OneSecond"  # One second interval for summaries.
+    TEN_MINUTES = "TenMinutes"  # Ten minute interval for summaries.
 
 
 class TemplateType(Enum):
