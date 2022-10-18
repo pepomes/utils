@@ -43,7 +43,7 @@ class Credentials:
     def headers(self, additional_headers: Dict = None):
         headers = {
             "Authorization": f"Token {self.token}",
-            "Prefer": "odata.maxpagesize=100000; respond-async; wait=5",
+            "Prefer": "odata.maxpagesize=100000; respond-async;",
             "Content-Type": "application/json; odata=minimalmetadata",
         }
         if additional_headers is not None:
@@ -237,7 +237,7 @@ class ExtractionsContext:
             while response.status_code == 202:
                 date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print(f"{date_str}: Waiting for data from {request_url}...")
-                time.sleep(10)
+                time.sleep(30)
                 response = self._requests.get(request_url)
 
         if response.status_code != 200:
