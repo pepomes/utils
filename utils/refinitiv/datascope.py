@@ -8,6 +8,7 @@ from typing import Dict, List, Iterable
 import pandas as pd
 
 import requests
+import gzip
 
 from utils.refinitiv.enums import (
     RefinitivField,
@@ -21,7 +22,8 @@ from utils.refinitiv.enums import (
     QuotaCategoryCode,
     AssetClass,
     InstrumentTypeGroup,
-    IdentifierType
+    IdentifierType,
+    CompressionType
 )
 
 
@@ -132,6 +134,7 @@ class ExtractionRequest:
     fields: Iterable[RefinitivField]
     condition: Dict
     identifier_type: IdentifierType
+    compression: CompressionType
 
     def to_dict(self):
         return {
@@ -143,7 +146,7 @@ class ExtractionRequest:
                     "InstrumentIdentifiers": [{"Identifier": ric, "IdentifierType": self.identifier_type.value} for ric in self.rics],
                     "UseUserPreferencesForValidationOptions": "false",
                 },
-                "Condition": self.condition,
+                "Condition": self.condition
             }
         }
 
@@ -165,7 +168,7 @@ class SearchRequest:
 
 
 class Writer:
-    def write(self, filestream):
+    def write(self, filestream, compression: CompressionType):
         raise NotImplementedError
 
 
@@ -173,9 +176,13 @@ class CsvWriter(Writer):
     def __init__(self, location: str):
         self.location = location
 
-    def write(self, filestream):
-        with open(self.location, 'w') as f:
-            f.write(filestream.text)
+    def write(self, filestream, compression: CompressionType):
+        if compression == CompressionType.NoCompression:
+            with open(self.location, 'w') as f:
+                f.write(filestream.content)
+        elif compression == CompressionType.GZip:
+            with open(self.location, 'wb') as f:
+                f.write(gzip.decompress(filestream.content))
 
 
 def intraday_bars_request(rics: Iterable[str], fields: Iterable[IntradayField], date_range: DateRange,
@@ -189,7 +196,8 @@ def intraday_bars_request(rics: Iterable[str], fields: Iterable[IntradayField], 
         "TimebarPersistence": "true",
         "DisplaySourceRIC": "true",
     }
-    return ExtractionRequest(RequestType.INTRADAY_BARS, rics, fields, condition=condition, identifier_type=identifier_type)
+    return ExtractionRequest(RequestType.INTRADAY_BARS, rics, fields, condition=condition, identifier_type=identifier_type,
+                             compression=CompressionType.GZip)
 
 
 def eod_request(rics: Iterable[str], fields: Iterable[EndOfDayField], date_range: DateRange, identifier_type: IdentifierType) -> ExtractionRequest:
@@ -198,16 +206,19 @@ def eod_request(rics: Iterable[str], fields: Iterable[EndOfDayField], date_range
         "QueryStartDate": date_range.first.strftime("%Y-%m-%d"),
         "QueryEndDate": date_range.last.strftime("%Y-%m-%d"),
     }
-    return ExtractionRequest(RequestType.END_OF_DAY, rics, fields, condition, identifier_type=identifier_type)
+    return ExtractionRequest(RequestType.END_OF_DAY, rics, fields, condition, identifier_type=identifier_type,
+                             compression=CompressionType.NoCompression)
 
 
-def time_and_sales_request(rics: Iterable[str], fields: Iterable[TimeAndSalesField], date_range: DateRange, identifier_typeIdentifierType) -> ExtractionRequest:
+def time_and_sales_request(rics: Iterable[str], fields: Iterable[TimeAndSalesField], date_range: DateRange,
+                           identifier_type: IdentifierType) -> ExtractionRequest:
     condition = {
         "ReportDateRangeType": "Range",
         "QueryStartDate": date_range.first.strftime("%Y-%m-%d"),
         "QueryEndDate": date_range.last.strftime("%Y-%m-%d"),
     }
-    return ExtractionRequest(RequestType.TIME_AND_SALES, rics, fields, condition, identifier_type=identifier_type)
+    return ExtractionRequest(RequestType.TIME_AND_SALES, rics, fields, condition, identifier_type=identifier_type,
+                             compression=CompressionType.NoCompression)
 
 
 class ExtractionsContext:
@@ -242,17 +253,16 @@ class ExtractionsContext:
 
         if response.status_code != 200:
             raise RuntimeError(response)
-
         dump_response(response)
         # notes = as_dict(response)["Notes"]
         job_id = as_dict(response)["JobId"]
         request_headers = {"Content-Type": "text/plain", "Accept-Encoding": "gzip", "X-Direct-Download": "True"}
         url = reuters_url(f"Extractions/RawExtractionResults('{job_id}')/$value")
 
-        r5 = self._requests.get(url, headers=request_headers, stream=True)
+        r5 = self._requests.get(url, headers=request_headers)  # , stream=True)
         # Ensure we do not automatically decompress the data on the fly:
-        r5.raw.decode_content = False
-        writer.write(filestream=r5)
+        # r5.raw.decode_content = False
+        writer.write(filestream=r5, compression=request.compression)
 
     def search(self, request: SearchRequest, write_loc: str) -> None:
         search_res = pd.DataFrame()
@@ -270,8 +280,6 @@ class ExtractionsContext:
             raise RuntimeError(response)
 
         search_res.to_csv(write_loc)
-
-
 
 
 @dataclass(frozen=True)

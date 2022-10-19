@@ -647,3 +647,8 @@ class InstrumentTypeGroup(Enum):
 class IdentifierType(Enum):
     Ric = "Ric"
     ChainRic = "ChainRIC"
+
+class CompressionType(Enum):
+    GZip = "GZip"
+    NoCompression = "None"
+    Zip = "Zip"

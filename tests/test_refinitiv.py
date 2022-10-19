@@ -9,11 +9,12 @@ from utils.refinitiv.datascope import (
     ExtractionsContext,
     DateRange,
     eod_request,
+    intraday_bars_request,
     dump_response,
     SearchRequest,
     CsvWriter
 )
-from utils.refinitiv.enums import EndOfDayField, QuotaCategoryCode, InstrumentTypeGroup, IdentifierType
+from utils.refinitiv.enums import EndOfDayField, QuotaCategoryCode, InstrumentTypeGroup, IdentifierType, IntradayField, SummaryInterval
 from utils.refinitiv.rics import HRP_UNIVERSE
 
 
@@ -24,6 +25,34 @@ def dump_quota_info(http: HTTP):
     for code in QuotaCategoryCode:
         for ric in context.get_authorized_ric_list(code):
             print(ric)
+
+def main2():
+    dss_pass = os.getenv("DSS_PASS")
+    dss_login = os.getenv("DSS_LOGIN")
+    today = date.today()
+    last_date = today - timedelta(days=1)
+    first_date = today - timedelta(days=2)
+    destination_uri = "./hist_data.csv"
+
+    http = CredentialedHTTP(RefinitivCredentialsProvider(dss_login, dss_pass, HTTP()))
+
+    fields = [
+        IntradayField.CloseAsk,
+        IntradayField.CloseBid,
+        IntradayField.Last,
+        IntradayField.Volume
+    ]
+
+    rics = ["0#AD:"]
+
+    request = intraday_bars_request(rics,
+                                              fields,
+                                              DateRange(first_date, last_date),
+                                              SummaryInterval.ONE_HOUR,
+                                              IdentifierType.ChainRic)
+
+    writer = CsvWriter(destination_uri)
+    ExtractionsContext(http).extract_raw(request, writer)
 
 
 def main(destination_uri, rics, first_date, last_date):
@@ -68,4 +97,5 @@ if __name__ == "__main__":
     last_date = today - timedelta(days=1)
     first_date = last_date.replace(year=today.year - 1)
 
-    main(args.output, ["0#AD:"], first_date, last_date)
+    #main(args.output, ["0#AD:"], first_date, last_date)
+    main2()
